@@ -1,7 +1,7 @@
 from typing import AsyncGenerator, Annotated
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, Response
 
 from cryptography.fernet import Fernet
 
@@ -33,8 +33,10 @@ async def create_secret(
     secret: SecretCreate,
     db_session: get_db_session,
     cache_client: get_cache_client,
-    request: Request
+    request: Request,
+    response: Response
 ) -> dict[str, UUID]:
+    response.headers['Cache-Control'] = 'no-store'
     secret.secret = fernet.encrypt(bytes(secret.secret, 'utf-8'))
 
     if secret.passphrase:
@@ -51,8 +53,11 @@ async def get_secret(
     secret_key: UUID,
     db_session: get_db_session,
     cache_client: get_cache_client,
-    request: Request
+    request: Request,
+    response: Response
 ) -> SecretRead:
+    response.headers['Cache-Control'] = 'no-store'
+
     if secret := await get_secret_from_cache(cache_client, secret_key):
         secret['secret'] = fernet.decrypt(secret['secret'])
         secret['is_accessed'] = True
@@ -61,6 +66,7 @@ async def get_secret(
     secret = await get_secret_from_db(secret_key, request.client.host, db_session)
     secret.secret = fernet.decrypt(secret.secret)
     secret.is_accessed = True
+
     return secret
 
 
@@ -70,8 +76,11 @@ async def delete_secret(
     db_session: get_db_session,
     cache_client: get_cache_client,
     request: Request,
+    response: Response,
     passphrase: SecretPassphrase,
 ) -> dict[str, str]:
+    response.headers['Cache-Control'] = 'no-store'
+
     await delete_secret_from_db(
         secret_key,
         request.client.host,

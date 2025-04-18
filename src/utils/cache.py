@@ -36,10 +36,13 @@ async def create_secret_in_cache(client: Redis, secret_key: UUID, secret: Secret
 
 
 async def get_secret_from_cache(client: Redis, secret_key: UUID):
+    secret_key = str(secret_key)
+
     try:
-        secret = await client.hgetall(str(secret_key))
+        secret = await client.hgetall(secret_key)
     except TypeError:
         return False
+    await delete_secret_from_cache(client, secret_key)
     return secret
 
 
