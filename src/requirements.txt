@@ -1,0 +1,9 @@
+asyncpg
+alembic
+cryptography
+fastapi
+pydantic-settings
+redis
+SQLAlchemy
+pwdlib[argon2]
+uvicorn[standard]
