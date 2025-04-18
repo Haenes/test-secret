@@ -36,7 +36,7 @@ async def create_secret(
     request: Request,
     response: Response
 ) -> dict[str, UUID]:
-    response.headers['Cache-Control'] = 'no-store'
+    add_cache_headers(response)
     secret.secret = fernet.encrypt(bytes(secret.secret, 'utf-8'))
 
     if secret.passphrase:
@@ -56,7 +56,7 @@ async def get_secret(
     request: Request,
     response: Response
 ) -> SecretRead:
-    response.headers['Cache-Control'] = 'no-store'
+    add_cache_headers(response)
 
     if secret := await get_secret_from_cache(cache_client, secret_key):
         secret['secret'] = fernet.decrypt(secret['secret'])
@@ -79,7 +79,7 @@ async def delete_secret(
     response: Response,
     passphrase: SecretPassphrase,
 ) -> dict[str, str]:
-    response.headers['Cache-Control'] = 'no-store'
+    add_cache_headers(response)
 
     await delete_secret_from_db(
         secret_key,
@@ -89,3 +89,9 @@ async def delete_secret(
     )
     await delete_secret_from_cache(cache_client, secret_key)
     return {'result': 'Секрет удалён!'}
+
+
+def add_cache_headers(response: Response):
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'

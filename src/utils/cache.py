@@ -32,7 +32,12 @@ async def create_secret_in_cache(client: Redis, secret_key: UUID, secret: Secret
             'created_at': str(secret.created_at)
         },
     )
-    await client.expire(secret_key, settings.REDIS_EXPIRE_TIME)
+
+    if secret.ttl_seconds < 300:
+        expire_time = secret.ttl_seconds
+    else:
+        expire_time = settings.REDIS_EXPIRE_TIME
+    await client.expire(secret_key, expire_time)
 
 
 async def get_secret_from_cache(client: Redis, secret_key: UUID):
